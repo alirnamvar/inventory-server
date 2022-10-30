@@ -1,11 +1,11 @@
 import paho.mqtt.client as mqtt
-import logging
 import time
 
 
 class MQTT:
     __recived_message = None
     __order_in_progress = "no"
+    __has_new_order = False
 
     def __init__(self ,address, port, name) -> None:
         self.address = address
@@ -14,14 +14,25 @@ class MQTT:
         self._set_on_configs()
 
     def connect(self):
-        logging.info(f"Connecting to Broker {self.address}.")
         self.client.connect(self.address)
 
     def loop_start(self):
         self.client.loop_start()
 
+    def loop_stop(self):
+        self.client.loop_stop()
+
+    def get_recived_message(self):
+        return self.__recived_message
+
+    def set_recived_message_None(self):
+        self.__recived_message = None
+
+    def get_order_in_progress(self):
+        return self.__order_in_progress
+
     def _set_on_configs(self):
-        self.client.on_connect = MQTT.on_connect
+        # self.client.on_connect = MQTT.on_connect
         self.client.on_disconnect = MQTT.on_disconnect
         self.client.on_message = MQTT.on_message
         self.client.on_publish = MQTT.on_publish
@@ -32,8 +43,9 @@ class MQTT:
         self.__order_in_progress = self.__recived_message
 
     def publish(self, topic, msg):
-        temp = self.client.publish(topic, str(msg))
-        temp.wait_for_publish()
+        infot = self.client.publish(topic, str(msg))
+        infot.wait_for_publish()
+        return infot
 
     def subscribe(self, topic):
         return self.client.subscribe(topic)
@@ -62,6 +74,7 @@ class MQTT:
         topic = msg.topic
         m_decode = str(msg.payload.decode('utf-8'))
         MQTT.__recived_message = m_decode
+        MQTT.__has_new_order = True
         print(f"Recived message: {m_decode}")
 
 
@@ -71,3 +84,4 @@ class MQTTPublisher(MQTT):
 
 class MQTTSubscriber(MQTT):
     pass
+
