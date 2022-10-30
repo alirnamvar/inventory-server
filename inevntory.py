@@ -1,5 +1,5 @@
 import logging
-from constnts import EnumColor, clear_screen
+from constants import EnumColor, clear_screen
 import numpy as np
 
 

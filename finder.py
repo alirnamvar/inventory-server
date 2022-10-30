@@ -1,4 +1,4 @@
-from constnts import EnumColor
+from constants import EnumColor
 
 
 class Finder:
