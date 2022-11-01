@@ -3,15 +3,17 @@ import logging
 import sys
 import os
 
+from handlers.sql_handler import SQLHandler
 from handlers.redis_handler import RedisHandler
 from handlers.order_handler import OrderHandler
 
 # import handlers
+from constants import *
 from finder import Finder
+from warehouse import Warehouse
 from inevntory import Inventory
 from mqtt import MQTT, MQTTSubscriber
-from constants import *
-from warehouse import Warehouse
+
 
 # Set up logging setup
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
@@ -20,38 +22,41 @@ logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 def main():
     # input_server = input("Server: ")
     # input_port = int(input("Port: "))
-    input_redis_server = "localhost"
-    input_redis_port = 6379
-    broker_addres = "localhost"
-    broker_port = 1883
+    broker_configs = {
+        "address" : "localhost",
+        "port" : 1883,
+    }
+    redis_configs = {
+        "server" : "localhost",
+        "port" : 6379,
+    }
+    sql_configs = {
+        "server" : "localhost",
+        "user" : "alirnamvar",
+        "database" : "IUT",
+    }
 
     order_number = 0
     disorder_number = 0
     list_of_orders_in_tuple = []
     material_coordinate_list = []
-    status = {
-        'assemble_in_progress' : "no",
-        'disassemble_in_progress' : False,
-    }
 
-    # Create a redis server, connect to it and initiate it
-    redis_server = RedisHandler(server=input_redis_server, port=input_redis_port)
+    # Create servers, connect to and initiate it
+    sql_server = SQLHandler(**sql_configs)
+    redis_server = RedisHandler(**redis_configs)
     redis_server.flush()
 
-    mqtt_client = MQTT(broker_addres, broker_port)
-    mqtt_client.connect()
-    mqtt_client.loop_start()
-    mqtt_sub_plc = MQTTSubscriber(broker_addres, broker_port)
+    mqtt_client = MQTT(**broker_configs)
+    mqtt_sub_plc = MQTTSubscriber(**broker_configs)
 
     # create usable objects
     order_handler = OrderHandler()
     my_finder = Finder()
 
-    # make inventory and arrange it
+    # make warehouse annd inventory then arrange it
     iut_warehouse = Warehouse(WAREHOUSE_X, WAREHOUSE_Y)
     iut_inventory = Inventory(INVENTORY_X, INVENTORY_Y)
     iut_inventory.arrange(redis_server)
-    iut_inventory.print_inventory()
 
     # Check if the connection is successful or not
     if redis_server.get_connection_status():
@@ -95,25 +100,24 @@ def main():
 
             # make mqtt client for PLC
             HAVE_PALLET_POSITION = False
-            mqtt_sub_plc.connect()
-            mqtt_sub_plc.loop_start()
+            mqtt_sub_plc.connect_and_loop_start()
             mqtt_sub_plc.subscribe("warehouse/palletPosition")
 
             # wait for pallet position
             while not HAVE_PALLET_POSITION:
+                time.sleep(WAITING_100_MILLISECOND)
                 if mqtt_sub_plc.get_has_pallet_position():
                     HAVE_PALLET_POSITION = True
                     iut_warehouse.update_pallet_position(mqtt_sub_plc.get_pallet_position())
-                    iut_warehouse.print_warehouse()
                     mqtt_sub_plc.reset_pallet_position()
             mqtt_sub_plc.loop_stop_and_disconnect()
 
         # process disassemble order
-        elif disorder_number != redis_server.get_disorder_number():
-            # show and update disorder_number
-            logging.info("New Disassemble order received.")
-            disorder_number = redis_server.get_disorder_number()
-            logging.info(f'Disassemble order number: {disorder_number}')
+        # elif disorder_number != redis_server.get_disorder_number():
+        #     # show and update disorder_number
+        #     logging.info("New Disassemble order received.")
+        #     disorder_number = redis_server.get_disorder_number()
+        #     logging.info(f'Disassemble order number: {disorder_number}')
 
         time.sleep(WAITING_2_SECONDS)
 
