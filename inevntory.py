@@ -40,7 +40,7 @@ class Inventory:
         redis_server.set('blue', blue_in_server - blue)
         redis_server.set('white', white_in_server - white)
         logging.info("Inventory has updated.")
-        self.print_grid()
+        self.print_inventory()
 
     def place_selected_materials(self, number: int, enum_color: EnumColor) -> None:
         for i in range(1, number + 1):
@@ -48,7 +48,7 @@ class Inventory:
             coor = [i for i in coor if i.isnumeric()]
             self.set_xy_grid(x=int(coor[0]), y=int(coor[1]), color=enum_color)
 
-    def print_grid(self) -> None:
+    def print_inventory(self) -> None:
         print('Inventory Status:\n', self.__grid, '\n')
 
     def set_xy_grid(self, *,  x: int, y: int, color: EnumColor) -> None:

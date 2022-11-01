@@ -2,9 +2,13 @@ from enum import Enum
 import os
 
 
-WAITING_TIME_IN_SECONDS = 2
+WAITING_2_SECONDS = 2
+WAITING_1_SECOND = 1
+WAITING_100_MILLISECOND = 0.1
 INVENTORY_X = 4
 INVENTORY_Y = 4
+WAREHOUSE_X = 5
+WAREHOUSE_Y = 5
 
 clear_screen = lambda: os.system('cls' if os.name=='nt' else 'clear')
 
