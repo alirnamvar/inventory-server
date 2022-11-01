@@ -5,13 +5,12 @@ import time
 class MQTT:
     __recived_message = None
     __order_in_progress = "no"
-    __has_new_order = False
 
-    def __init__(self ,address, port, name) -> None:
+    def __init__(self ,address, port) -> None:
         self.address = address
         self.port = port
-        self.client = mqtt.Client(name)
-        self._set_on_configs()
+        self.client = mqtt.Client()
+        self.__set_on_configs()
 
     def connect(self):
         self.client.connect(self.address)
@@ -31,11 +30,11 @@ class MQTT:
     def get_order_in_progress(self):
         return self.__order_in_progress
 
-    def _set_on_configs(self):
+    def __set_on_configs(self):
         # self.client.on_connect = MQTT.on_connect
-        self.client.on_disconnect = MQTT.on_disconnect
+        # self.client.on_disconnect = MQTT.on_disconnect
         self.client.on_message = MQTT.on_message
-        self.client.on_publish = MQTT.on_publish
+        # self.client.on_publish = MQTT.on_publish
 
     def update_order_status(self):
         self.subscribe("inventory/order_in_progress")
@@ -78,10 +77,43 @@ class MQTT:
         print(f"Recived message: {m_decode}")
 
 
-class MQTTPublisher(MQTT):
-    pass
-
-
 class MQTTSubscriber(MQTT):
-    pass
+    # __has_pallet_position = False
+    # __pallet_position = None
 
+    def __init__(self, address, port, name):
+        self.address = address
+        self.port = port
+        self.client = mqtt.Client(name)
+        self.client.pallet_position = None
+        self.client.has_pallet_position = False
+        self.client.on_message = MQTTSubscriber.on_message
+
+    def set_has_pallet_position_false(self):
+        self.client.has_pallet_position = False
+
+    def set_has_pallet_position_true(self):
+        self.client.has_pallet_position = True
+
+    def get_has_pallet_position(self):
+        return self.client.has_pallet_position
+
+    def get_pallet_position(self):
+        return self.client.pallet_position
+
+    def set_pallet_position_None(self):
+        self.client.pallet_position = None
+
+    def subscribe(self, topic):
+        return self.client.subscribe(topic)
+
+    def disconnect(self):
+        self.client.disconnect()
+
+    @staticmethod
+    def on_message(client, userdata, msg):
+        topic = msg.topic
+        m_decode = str(msg.payload.decode('utf-8'))
+        client.pallet_position = m_decode
+        client.has_pallet_position = True
+        print(f"Recived pallet position: {m_decode}")
