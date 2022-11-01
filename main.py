@@ -26,7 +26,7 @@ def main():
     broker_port = 1883
 
     order_number = 0
-    pallet_in_warehouse_counter = 0
+    disorder_number = 0
     list_of_orders_in_tuple = []
     material_coordinate_list = []
     status = {
@@ -41,9 +41,7 @@ def main():
     mqtt_client = MQTT(broker_addres, broker_port)
     mqtt_client.connect()
     mqtt_client.loop_start()
-    # mqtt_sub_plc = MQTTSubscriber(broker_addres, broker_port)
-    # mqtt_sub_plc.connect()
-
+    mqtt_sub_plc = MQTTSubscriber(broker_addres, broker_port)
 
     # create usable objects
     order_handler = OrderHandler()
@@ -65,16 +63,8 @@ def main():
 
     logging.info("Waiting for new order...")
     while redis_server.get_connection_status():
-        # while status['assemble_in_progress'] == "yes":
-        #     clear_screen()
-        #     logging.info("An assembly order in progress, please wait...")
-        #     mqtt_client.update_order_status()
-        #     status['assemble_in_progress'] = mqtt_client.get_order_in_progress()
-        #     time.sleep(2)
-        #     '''
-        #     we subscribe to a "inventory/order_in_progress" topic and its output should be "yes" or "no".
-        #     'mqtt_client.update_order_status()' function update 'mqtt_client.order_in_progress' to "yes" or "no".
-        #     '''
+
+        # process assemble order
         if order_number != redis_server.get_order_number():
             # show and update order_number
             logging.info("New order received.")
@@ -103,31 +93,27 @@ def main():
             mqtt_client.publish("inventory/order", order_to_mobile_robot)
             logging.info("Order sent to mobile robot.")
 
-            HAS_PALLET_POSITION = False
-            mqtt_sub_plc = MQTTSubscriber(broker_addres, broker_port, \
-            f"pallet{iut_warehouse.get_pallet_number()}")
+            # make mqtt client for PLC
+            HAVE_PALLET_POSITION = False
             mqtt_sub_plc.connect()
             mqtt_sub_plc.loop_start()
-            mqtt_sub_plc.subscribe(f"warehouse/palletPosition{iut_warehouse.get_pallet_number()}")
-            # LAST_PALLET_POSITION = None
-            while not HAS_PALLET_POSITION:
-                time.sleep(WAITING_100_MILLISECOND)
+            mqtt_sub_plc.subscribe("warehouse/palletPosition")
+
+            # wait for pallet position
+            while not HAVE_PALLET_POSITION:
                 if mqtt_sub_plc.get_has_pallet_position():
-                # if mqtt_sub_client.get_recived_message() != LAST_PALLET_POSITION:
-                    HAS_PALLET_POSITION = True
-                    # mqtt_sub_plc.set_has_pallet_position_true()
-                    pallet_position = mqtt_sub_plc.get_pallet_position()
-                    # LAST_PALLET_POSITION = pallet_position
-                    iut_warehouse.update_pallet_position(pallet_position)
+                    HAVE_PALLET_POSITION = True
+                    iut_warehouse.update_pallet_position(mqtt_sub_plc.get_pallet_position())
                     iut_warehouse.print_warehouse()
-                    mqtt_sub_plc.set_pallet_position_None()
-                    mqtt_sub_plc.set_has_pallet_position_false()
-                    pallet_in_warehouse_counter += 1
-                    time.sleep(2)
-                # mqtt_sub_client.disconnect()
-            mqtt_sub_plc.loop_stop()
-            mqtt_sub_plc.disconnect()
-            # del mqtt_sub_plc
+                    mqtt_sub_plc.reset_pallet_position()
+            mqtt_sub_plc.loop_stop_and_disconnect()
+
+        # process disassemble order
+        elif disorder_number != redis_server.get_disorder_number():
+            # show and update disorder_number
+            logging.info("New Disassemble order received.")
+            disorder_number = redis_server.get_disorder_number()
+            logging.info(f'Disassemble order number: {disorder_number}')
 
         time.sleep(WAITING_2_SECONDS)
 
