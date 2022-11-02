@@ -91,7 +91,7 @@ class MQTTSubscribePLC(MQTT):
         self.client = mqtt.Client()
         self.client.pallet_position = None
         self.client.has_pallet_position = False
-        self.client.on_message = MQTTSubscriber.on_message
+        self.client.on_message = MQTTSubscribePLC.on_message
 
     def subscribe(self, topic):
         return self.client.subscribe(topic)
@@ -126,3 +126,47 @@ class MQTTSubscribePLC(MQTT):
         client.pallet_position = m_decode
         client.has_pallet_position = True
         logging.info(f"Recived pallet position is \"{m_decode}\"")
+
+class MQTTSubscribeMR(MQTT):
+
+    def __init__(self, address, port):
+        self.address = address
+        self.port = port
+        self.client = mqtt.Client()
+        self.client.materials_position = None
+        self.client.has_materials_position = False
+        self.client.on_message = MQTTSubscribeMR.on_message
+
+    def subscribe(self, topic):
+        return self.client.subscribe(topic)
+
+    def reset_materials_position(self):
+        self.__set_materials_position_None()
+        self.__set_has_materials_position_false()
+
+    def loop_stop_and_disconnect(self):
+        self.client.loop_stop()
+        self.client.disconnect()
+
+    def set_has_materials_position_true(self):
+        self.client.has_materials_position = True
+
+    def get_has_materials_position(self):
+        return self.client.has_materials_position
+
+    def get_materials_position(self) -> int:
+        return int(self.client.materials_position)
+
+    def __set_materials_position_None(self):
+        self.client.materials_position = None
+
+    def __set_has_materials_position_false(self):
+        self.client.has_materials_position = False
+
+    @staticmethod
+    def on_message(client, userdata, msg):
+        topic = msg.topic
+        m_decode = str(msg.payload.decode('utf-8'))
+        client.materials_position = m_decode
+        client.has_materials_position = True
+        logging.info(f"Recived materials position: \"{m_decode}\"")

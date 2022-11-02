@@ -12,7 +12,7 @@ class Inventory:
         self.__grid = np.zeros((x, y))
 
     def arrange(self, redis_server) -> None:
-        logging.info('Arranging raw materials...')
+        logging.info('Arranging inventory raw materials...')
         ee = tuple(
             input("Enter each material in following format (R, G, B, W): "))
         red, green, blue, white = [i for i in ee if i.isnumeric()]
@@ -28,12 +28,11 @@ class Inventory:
         self.place_selected_materials(int(white), EnumColor.WHITE)
         clear_screen()
         logging.info("Inventory arranged.\n")
+        self.print_inventory()
 
     def update_inventory(self, red, green, blue, white, redis_server) -> None:
-        red_in_server = int(redis_server.get('red').decode('utf-8'))
-        green_in_server = int(redis_server.get('green').decode('utf-8'))
-        blue_in_server = int(redis_server.get('blue').decode('utf-8'))
-        white_in_server = int(redis_server.get('white').decode('utf-8'))
+        red_in_server, green_in_server, \
+            blue_in_server, white_in_server = self._get_materials_from_server(redis_server)
 
         redis_server.set('red', red_in_server - red)
         redis_server.set('green', green_in_server - green)
@@ -41,6 +40,14 @@ class Inventory:
         redis_server.set('white', white_in_server - white)
         logging.info("Inventory has updated.")
         self.print_inventory()
+
+
+    def _get_materials_from_server(self, redis_server) -> tuple:
+        _red = int(redis_server.get('red').decode('utf-8'))
+        _green = int(redis_server.get('green').decode('utf-8'))
+        _blue = int(redis_server.get('blue').decode('utf-8'))
+        _white = int(redis_server.get('white').decode('utf-8'))
+        return (_red, _green, _blue, _white)
 
     def place_selected_materials(self, number: int, enum_color: EnumColor) -> None:
         for i in range(1, number + 1):

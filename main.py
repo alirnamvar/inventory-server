@@ -12,7 +12,7 @@ from constants import *
 from finder import Finder
 from warehouse import Warehouse
 from inevntory import Inventory
-from mqtt import MQTT, MQTTSubscriber
+from mqtt import MQTT, MQTTSubscribePLC, MQTTSubscribeMR
 
 
 # Set up logging setup
@@ -47,7 +47,8 @@ def main():
     redis_server.flush()
 
     mqtt_client = MQTT(**broker_configs)
-    mqtt_sub_plc = MQTTSubscriber(**broker_configs)
+    mqtt_sub_plc = MQTTSubscribePLC(**broker_configs)
+    mqtt_sub_mobile_robot = MQTTSubscribeMR(**broker_configs)
 
     # create usable objects
     order_handler = OrderHandler()
@@ -103,21 +104,44 @@ def main():
             mqtt_sub_plc.connect_and_loop_start()
             mqtt_sub_plc.subscribe("warehouse/palletPosition")
 
-            # wait for pallet position
+            # waiting for pallet position
             while not HAVE_PALLET_POSITION:
                 time.sleep(WAITING_100_MILLISECOND)
                 if mqtt_sub_plc.get_has_pallet_position():
                     HAVE_PALLET_POSITION = True
-                    iut_warehouse.update_pallet_position(mqtt_sub_plc.get_pallet_position())
+                    pallet_position = mqtt_sub_plc.get_pallet_position()
+                    iut_warehouse.update(pallet_position)
+                    sql_server.update_warehouse((red, green, blue, white), pallet_position)
                     mqtt_sub_plc.reset_pallet_position()
             mqtt_sub_plc.loop_stop_and_disconnect()
 
         # process disassemble order
-        # elif disorder_number != redis_server.get_disorder_number():
-        #     # show and update disorder_number
-        #     logging.info("New Disassemble order received.")
-        #     disorder_number = redis_server.get_disorder_number()
-        #     logging.info(f'Disassemble order number: {disorder_number}')
+        elif disorder_number != redis_server.get_disorder_number():
+            # show and update disorder_number
+            logging.info("New Disassemble order received.")
+            disorder_number = redis_server.get_disorder_number()
+            logging.info(f'Disassemble order number: {disorder_number}')
+
+            pallet_positon_to_plc = order_handler.process_new_disassemble_order(
+                disorder_number, redis_server)
+
+            # send pallet position to PLC
+            mqtt_client.publish('warehouse/palletPosition', str(pallet_positon_to_plc))
+            logging.info('Position of pallet sent to PLC.')
+
+            # listen to 'materialsPosition' topic
+            HAVE_MATERIALS_POSITION = False
+            mqtt_sub_mobile_robot.connect_and_loop_start()
+            mqtt_sub_mobile_robot.subscribe("inventory/materialsPosition")
+
+            # waiting for materials position
+            while not HAVE_MATERIALS_POSITION:
+                time.sleep(WAITING_100_MILLISECOND)
+                if mqtt_sub_mobile_robot.get_has_materials_position():
+                    HAVE_MATERIALS_POSITION = True
+                    materials_position = mqtt_sub_mobile_robot.get_materials_position()
+                    iut_inventory.update(materials_position)
+            mqtt_sub_mobile_robot.loop_stop_and_disconnect()
 
         time.sleep(WAITING_2_SECONDS)
 
