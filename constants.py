@@ -12,6 +12,30 @@ WAREHOUSE_Y = 5
 
 clear_screen = lambda: os.system('cls' if os.name=='nt' else 'clear')
 
+WAREHOUSE_TABLE_DESCRIPTION = '''
+    CREATE TABLE warehouse
+    (
+        position INT NOT NULL,
+        red INT,
+        green INT,
+        blue INT,
+        white INT,
+        PRIMARY KEY (position)
+    )
+    '''
+DISASSEMBLE_ORDERS_TABLE_DESCRIPTION =  '''
+    CREATE TABLE disassemble_orders
+    (
+        order_number INT NOT NULL AUTO_INCREMENT,
+        red INT,
+        green INT,
+        blue INT,
+        white INT,
+        PRIMARY KEY (order_number)
+    )
+    '''
+
+
 class EnumColor(Enum):
     EMPTY = 0
     RED = 1
