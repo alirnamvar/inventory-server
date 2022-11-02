@@ -1,5 +1,6 @@
 import paho.mqtt.client as mqtt
 import time
+import logging
 
 
 class MQTT:
@@ -11,9 +12,14 @@ class MQTT:
         self.port = port
         self.client = mqtt.Client()
         self.__set_on_configs()
+        self.connect_and_loop_start()
 
-    def connect(self):
+    def connect_and_loop_start(self):
         self.client.connect(self.address)
+        self.client.loop_start()
+
+    def disconnect(self):
+        self.client.disconnect()
 
     def loop_start(self):
         self.client.loop_start()
@@ -77,20 +83,26 @@ class MQTT:
         print(f"Recived message: {m_decode}")
 
 
-class MQTTSubscriber(MQTT):
-    # __has_pallet_position = False
-    # __pallet_position = None
+class MQTTSubscribePLC(MQTT):
 
-    def __init__(self, address, port, name):
+    def __init__(self, address, port):
         self.address = address
         self.port = port
-        self.client = mqtt.Client(name)
+        self.client = mqtt.Client()
         self.client.pallet_position = None
         self.client.has_pallet_position = False
         self.client.on_message = MQTTSubscriber.on_message
 
-    def set_has_pallet_position_false(self):
-        self.client.has_pallet_position = False
+    def subscribe(self, topic):
+        return self.client.subscribe(topic)
+
+    def reset_pallet_position(self):
+        self.__set_pallet_position_None()
+        self.__set_has_pallet_position_false()
+
+    def loop_stop_and_disconnect(self):
+        self.client.loop_stop()
+        self.client.disconnect()
 
     def set_has_pallet_position_true(self):
         self.client.has_pallet_position = True
@@ -98,17 +110,14 @@ class MQTTSubscriber(MQTT):
     def get_has_pallet_position(self):
         return self.client.has_pallet_position
 
-    def get_pallet_position(self):
-        return self.client.pallet_position
+    def get_pallet_position(self) -> int:
+        return int(self.client.pallet_position)
 
-    def set_pallet_position_None(self):
+    def __set_pallet_position_None(self):
         self.client.pallet_position = None
 
-    def subscribe(self, topic):
-        return self.client.subscribe(topic)
-
-    def disconnect(self):
-        self.client.disconnect()
+    def __set_has_pallet_position_false(self):
+        self.client.has_pallet_position = False
 
     @staticmethod
     def on_message(client, userdata, msg):
@@ -116,4 +125,4 @@ class MQTTSubscriber(MQTT):
         m_decode = str(msg.payload.decode('utf-8'))
         client.pallet_position = m_decode
         client.has_pallet_position = True
-        print(f"Recived pallet position: {m_decode}")
+        logging.info(f"Recived pallet position is \"{m_decode}\"")
