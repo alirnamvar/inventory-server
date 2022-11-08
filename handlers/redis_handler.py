@@ -46,12 +46,20 @@ class RedisHandler:
         len_disorder_list = len(self.get_disorder_list())
         __order_number = int(self.get('orderNumber').decode('utf-8'))
         __disorder_number = int(self.get('disorderNumber').decode('utf-8'))
+
         if (__order_number != len_order_list):
-            logging.info("Flushing server...")
             for i in range(1, MAX_ORDER):
                 if (self.get('order:%s' % i) != None):
                     logging.info("Deleting order:%s" % i)
                     self.delete('order:%s' % i)
+            logging.info("Redis Server initiated and flushed.")
+
+        if (__disorder_number != len_disorder_list):
+            for i in range(1, MAX_ORDER):
+                if (self.get('disorder:%s' % i) != None):
+                    logging.info("Deleting disassemble order:%s" % i)
+                    self.delete('disorder:%s' % i)
+        if len_disorder_list != 0 or len_order_list != 0:
             logging.info("Redis Server initiated and flushed.")
             return
         logging.info("Redis Server initiated.")
