@@ -37,20 +37,26 @@ class SQLHandler:
                     logging.warning("This SQL table already exists.")
                 else:
                     logging.error(err.msg)
-            # else:
-            #     # print(f"")
-            #     print(f"INFO: Table '{table_name}' created.")
             cursor.close()
         if len(created_tables) != 0:
             logging.info(f"Created tables: {str(created_tables).replace('[', '').replace(']', '')}")
 
-    def update_warehouse(self, pallet_materials : tuple, position : int) -> None:
+    def update_disassemble_orders_table(self, disorder_number, positon):
+        cursor = self.return_new_cursor()
+        query = f"INSERT INTO disassemble_orders (disorder_number, positon)" + \
+                f"VALUES ({disorder_number}, {positon})"
+        cursor.execute(query)
+        logging.info("Disassemble order saved into disassemble_orders of SQL server.")
+        self.__cnx.commit()
+        cursor.close()
+
+    def update_warehouse_table(self, pallet_materials : tuple, position : int) -> None:
         cursor = self.return_new_cursor()
         query = f"INSERT INTO warehouse (position, red, green, blue, white)" + \
                 f"VALUES ({position}, {pallet_materials[0]}, {pallet_materials[1]}, \
                 {pallet_materials[2]}, {pallet_materials[3]})"
         cursor.execute(query)
-        logging.info("Components and positon of pallet saved to SQL server.")
+        logging.info("Components and positon of pallet saved into warehouse of SQL server.")
         self.__cnx.commit()
         cursor.close()
 
