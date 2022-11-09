@@ -5,6 +5,7 @@ import os
 WAITING_2_SECONDS = 2
 WAITING_1_SECOND = 1
 WAITING_100_MILLISECOND = 0.1
+WAITING_500_MILLISECOND = 0.5
 INVENTORY_X = 4
 INVENTORY_Y = 4
 WAREHOUSE_X = 5
@@ -26,11 +27,8 @@ WAREHOUSE_TABLE_DESCRIPTION = '''
 DISASSEMBLE_ORDERS_TABLE_DESCRIPTION =  '''
     CREATE TABLE disassemble_orders
     (
-        order_number INT NOT NULL AUTO_INCREMENT,
-        red INT,
-        green INT,
-        blue INT,
-        white INT,
+        disorder_number INT NOT NULL,
+        position INT,
         PRIMARY KEY (order_number)
     )
     '''
