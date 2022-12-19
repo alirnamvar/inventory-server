@@ -99,12 +99,16 @@ def main():
                 str(list_of_orders_in_tuple[order_number - 1]),
                 material_coordinate_list)
             mqtt_client.publish("inventory/order", order_to_mobile_robot)
-            logging.info("Order sent to mobile robot, Waiting for pallet get to PLC...")
+            logging.info("Order sent to mobile robot, Waiting for pallet to get to PLC...")
+
+            ###############################################################################
+            mqtt_client.publish("phase", "0")
+            ###############################################################################
 
             # make mqtt client for PLC
             PALLET_RECIVED_TO_PLC = False
             mqtt_sub_pub_plc.connect_and_loop_start()
-            mqtt_sub_pub_plc.subscribe("warehouse/palletRecived")
+            mqtt_sub_pub_plc.subscribe("plc")
 
             # waiting for pallet position from PLC
             while not PALLET_RECIVED_TO_PLC:
@@ -112,7 +116,7 @@ def main():
                 if mqtt_sub_pub_plc.get_pallet_recived():
                     PALLET_RECIVED_TO_PLC = True
                     pallet_position = iut_warehouse.find_pallet_position()
-                    mqtt_sub_pub_plc.publish("warehouse/palletPosition", str(pallet_position))
+                    mqtt_sub_pub_plc.publish("destination", str(pallet_position))
                     iut_warehouse.update(pallet_position)
                     sql_server.update_warehouse_table((red, green, blue, white), pallet_position)
                     mqtt_sub_pub_plc.reset()
@@ -124,6 +128,10 @@ def main():
             logging.info("New Disassemble order received.")
             disorder_number = redis_server.get_disorder_number()
             logging.info(f'Disassemble order number: {disorder_number}')
+
+            ###############################################################################
+            mqtt_client.publish("phase", "1")
+            ###############################################################################
 
             # find position of pallet to disassemble
             pallet_positon_to_plc = order_handler.process_new_disassemble_order(
@@ -137,13 +145,13 @@ def main():
             iut_warehouse.remove_pallet(pallet_positon_to_plc)
 
             # send pallet position to PLC
-            mqtt_client.publish('warehouse/palletPosition', pallet_positon_to_plc)
+            mqtt_client.publish('destination', pallet_positon_to_plc)
             logging.info('Position of pallet sent to PLC, Waiting for Mobile Robot...')
 
             # listen to 'materialsPosition' topic
             HAVE_MATERIALS_POSITION = False
             mqtt_sub_mobile_robot.connect_and_loop_start()
-            mqtt_sub_mobile_robot.subscribe("inventory/rawMaterialsPosition")
+            mqtt_sub_mobile_robot.subscribe("plc")
 
             # waiting for materials position from mobile robot
             while not HAVE_MATERIALS_POSITION:
