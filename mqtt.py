@@ -83,49 +83,55 @@ class MQTT:
         print(f"Recived message: {m_decode}")
 
 
-class MQTTSubscribePLC(MQTT):
+class MQTTSubPubPLC(MQTT):
 
     def __init__(self, address, port):
         self.address = address
         self.port = port
         self.client = mqtt.Client()
-        self.client.pallet_position = None
-        self.client.has_pallet_position = False
-        self.client.on_message = MQTTSubscribePLC.on_message
+        # self.client.pallet_position = None
+        self.client.pallet_recived = False
+        self.client.on_message = MQTTSubPubPLC.on_message
 
     def subscribe(self, topic):
         return self.client.subscribe(topic)
 
-    def reset_pallet_position(self):
-        self.__set_pallet_position_None()
-        self.__set_has_pallet_position_false()
+    def publish(self, topic, msg):
+        infot = self.client.publish(topic, str(msg))
+        infot.wait_for_publish()
+        return infot
+
+    def reset(self):
+        # self.__set_pallet_position_None()
+        self.__set_pallet_recived_false()
 
     def loop_stop_and_disconnect(self):
         self.client.loop_stop()
         self.client.disconnect()
 
-    def set_has_pallet_position_true(self):
-        self.client.has_pallet_position = True
+    def set_pallet_recived_true(self):
+        self.client.pallet_recived = True
 
-    def get_has_pallet_position(self):
-        return self.client.has_pallet_position
+    def get_pallet_recived(self):
+        return self.client.pallet_recived
 
-    def get_pallet_position(self) -> int:
-        return int(self.client.pallet_position)
+    # def get_pallet_position(self) -> int:
+    #     return int(self.client.pallet_position)
 
-    def __set_pallet_position_None(self):
-        self.client.pallet_position = None
+    # def __set_pallet_position_None(self):
+    #     self.client.pallet_position = None
 
-    def __set_has_pallet_position_false(self):
-        self.client.has_pallet_position = False
+    def __set_pallet_recived_false(self):
+        self.client.pallet_recived = False
 
     @staticmethod
     def on_message(client, userdata, msg):
         topic = msg.topic
         m_decode = str(msg.payload.decode('utf-8'))
-        client.pallet_position = m_decode
-        client.has_pallet_position = True
-        logging.info(f"Recived pallet position is \"{m_decode}\"")
+        # client.pallet_position = m_decode
+        if m_decode == "yes":
+            client.pallet_recived = True
+            logging.info("Pallet recived to PLC.")
 
 class MQTTSubscribeMR(MQTT):
 
@@ -154,14 +160,17 @@ class MQTTSubscribeMR(MQTT):
     def get_has_materials_position(self):
         return self.client.has_materials_position
 
-    def get_materials_position(self) -> int:
-        return int(self.client.materials_position)
+    def get_materials_position(self) -> str:
+        return self.client.materials_position
 
     def __set_materials_position_None(self):
         self.client.materials_position = None
 
     def __set_has_materials_position_false(self):
         self.client.has_materials_position = False
+
+    def reset(self):
+        self.__set_has_materials_position_false()
 
     @staticmethod
     def on_message(client, userdata, msg):

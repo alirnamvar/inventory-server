@@ -41,12 +41,20 @@ class SQLHandler:
         if len(created_tables) != 0:
             logging.info(f"Created tables: {str(created_tables).replace('[', '').replace(']', '')}")
 
-    def update_disassemble_orders_table(self, disorder_number, positon):
+    def del_pallet_record_in_warehouse(self, pallet_positon):
         cursor = self.return_new_cursor()
-        query = f"INSERT INTO disassemble_orders (disorder_number, positon)" + \
-                f"VALUES ({disorder_number}, {positon})"
+        delete_query = f"DELETE FROM warehouse WHERE position = {pallet_positon}"
+        cursor.execute(delete_query)
+        # logging.info(f"Pallet row {pallet_positon} deleted from 'warehouse' table of SQL server.")
+        self.__cnx.commit()
+        cursor.close()
+
+    def update_disassemble_orders_table(self, disorder_number, position):
+        cursor = self.return_new_cursor()
+        query = f"INSERT INTO disassemble_orders (disorder_number, position)" + \
+                f"VALUES ({disorder_number}, {position})"
         cursor.execute(query)
-        logging.info("Disassemble order saved into disassemble_orders of SQL server.")
+        # logging.info("Disassemble order saved into 'disassemble_orders' table of SQL server.")
         self.__cnx.commit()
         cursor.close()
 
@@ -56,7 +64,7 @@ class SQLHandler:
                 f"VALUES ({position}, {pallet_materials[0]}, {pallet_materials[1]}, \
                 {pallet_materials[2]}, {pallet_materials[3]})"
         cursor.execute(query)
-        logging.info("Components and positon of pallet saved into warehouse of SQL server.")
+        logging.info("Components and positon of pallet saved into 'warehouse' table of SQL server.")
         self.__cnx.commit()
         cursor.close()
 

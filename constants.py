@@ -29,7 +29,7 @@ DISASSEMBLE_ORDERS_TABLE_DESCRIPTION =  '''
     (
         disorder_number INT NOT NULL,
         position INT,
-        PRIMARY KEY (order_number)
+        PRIMARY KEY (disorder_number)
     )
     '''
 

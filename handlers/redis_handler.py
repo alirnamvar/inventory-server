@@ -22,6 +22,12 @@ class RedisHandler:
     def set(self, key: str, value: str) -> None:
         self.redis_server.set(key, value)
 
+    def set_colors(self, red: str, green: str, blue: str, white: str):
+        self.redis_server.set('red', red)
+        self.redis_server.set('green', green)
+        self.redis_server.set('blue', blue)
+        self.redis_server.set('white', white)
+
     def delete(self, key: str) -> None:
         self.redis_server.delete(key)
 
@@ -42,24 +48,24 @@ class RedisHandler:
         logging.info("Initiating and flushing Redis server...")
         self.redis_server.set('orderNumber', 0)
         self.redis_server.set('disorderNumber', 0)
-        len_order_list = len(self.get_order_list())
-        len_disorder_list = len(self.get_disorder_list())
-        __order_number = int(self.get('orderNumber').decode('utf-8'))
-        __disorder_number = int(self.get('disorderNumber').decode('utf-8'))
+        order_list_length = len(self.get_order_list())
+        disorder_list_length = len(self.get_disorder_list())
+        # __order_number = int(self.get('orderNumber').decode('utf-8'))
+        # __disorder_number = int(self.get('disorderNumber').decode('utf-8'))
 
-        if (__order_number != len_order_list):
+        if (order_list_length):
             for i in range(1, MAX_ORDER):
                 if (self.get('order:%s' % i) != None):
                     logging.info("Deleting order:%s" % i)
                     self.delete('order:%s' % i)
-            logging.info("Redis Server initiated and flushed.")
 
-        if (__disorder_number != len_disorder_list):
+        if (disorder_list_length):
             for i in range(1, MAX_ORDER):
                 if (self.get('disorder:%s' % i) != None):
                     logging.info("Deleting disassemble order:%s" % i)
                     self.delete('disorder:%s' % i)
-        if len_disorder_list != 0 or len_order_list != 0:
+
+        if disorder_list_length != 0 or order_list_length != 0:
             logging.info("Redis Server initiated and flushed.")
             return
         logging.info("Redis Server initiated.")

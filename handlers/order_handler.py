@@ -7,7 +7,7 @@ class OrderHandler:
               '\nblue:', blue, '\nwhite:', white)
         return tuple(map(int, (red, green, blue, white, order)))
 
-    def process_new_disassemble_order(self, new_disoreder_number, redis_server):
+    def process_new_disassemble_order(self, new_disoreder_number, redis_server) -> str:
         return redis_server.get(f"disorder:{new_disoreder_number}").decode('utf-8')
 
     def parse_order(self, order) -> tuple:
