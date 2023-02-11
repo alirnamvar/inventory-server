@@ -121,6 +121,7 @@ def main():
                     sql_server.update_warehouse_table((red, green, blue, white), pallet_position)
                     mqtt_sub_pub_plc.reset()
             mqtt_sub_pub_plc.loop_stop_and_disconnect()
+            logging.info("Waiting for new order...")
 
         # process disassemble order
         elif disorder_number != redis_server.get_disorder_number():
@@ -163,6 +164,7 @@ def main():
                     iut_inventory.update(materials_position, redis_server)
                     mqtt_sub_mobile_robot.reset()
             mqtt_sub_mobile_robot.loop_stop_and_disconnect()
+            logging.info("Waiting for new order...")
 
         time.sleep(WAITING_2_SECONDS)
 

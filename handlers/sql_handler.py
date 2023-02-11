@@ -5,9 +5,10 @@ from constants import WAREHOUSE_TABLE_DESCRIPTION, DISASSEMBLE_ORDERS_TABLE_DESC
 
 class SQLHandler:
 
-    def __init__(self, server, user, database):
+    def __init__(self, server, user, database, password='password'):
         self.host = server
         self.user = user
+        self.password = password
         self.database = database
         self._connect_to_server()
         self.create_tables([WAREHOUSE_TABLE_DESCRIPTION,
@@ -75,6 +76,7 @@ class SQLHandler:
         try:
             self.__cnx = connect(user=self.user,
                                 host=self.host,
+                                password=self.password,
                                 database=self.database)
         except mysql.connector.Error as err:
             if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
