@@ -38,7 +38,7 @@ class Warehouse:
 
     def find_pallet_position(self):
         self.__last_occupied_home += 1
-        return self.__last_occupied_home
+        return str(self.__last_occupied_home)
 
     def get_pallet_number(self) -> int:
         return self.__pallet_numbers

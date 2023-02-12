@@ -1,5 +1,6 @@
 import time
 import logging
+import socket
 import sys
 import os
 
@@ -12,6 +13,7 @@ from constants import *
 from finder import Finder
 from warehouse import Warehouse
 from inevntory import Inventory
+from my_socket import MySocket
 from mqtt import MQTT, MQTTSubPubPLC, MQTTSubscribeMR
 
 
@@ -35,6 +37,10 @@ def main():
         "user" : "alirnamvar",
         "database" : "IUT",
     }
+    esp32_configs = {
+        "ip" : "10.100.0.2",
+        "port" : 8000, 
+    }
 
     order_number = 0
     disorder_number = 0
@@ -53,6 +59,7 @@ def main():
     # create usable objects
     order_handler = OrderHandler()
     my_finder = Finder()
+    # my_socket = MySocket(esp32_configs['ip'], esp32_configs['port'])
 
     # make warehouse annd inventory then arrange it
     iut_warehouse = Warehouse(WAREHOUSE_X, WAREHOUSE_Y)
@@ -72,6 +79,11 @@ def main():
 
         # process assemble order
         if order_number != redis_server.get_order_number():
+            
+            ###############################################################################
+            mqtt_client.publish("phase", "0")
+            ###############################################################################
+            
             # show and update order_number
             logging.info("New order received.")
             order_number = redis_server.get_order_number()
@@ -98,12 +110,10 @@ def main():
             order_to_mobile_robot = iut_inventory.make_mobile_order(
                 str(list_of_orders_in_tuple[order_number - 1]),
                 material_coordinate_list)
+            # my_socket.send(str(order_to_mobile_robot))
+            print(str(order_to_mobile_robot))
             mqtt_client.publish("inventory/order", order_to_mobile_robot)
             logging.info("Order sent to mobile robot, Waiting for pallet to get to PLC...")
-
-            ###############################################################################
-            mqtt_client.publish("phase", "0")
-            ###############################################################################
 
             # make mqtt client for PLC
             PALLET_RECIVED_TO_PLC = False
@@ -116,7 +126,9 @@ def main():
                 if mqtt_sub_pub_plc.get_pallet_recived():
                     PALLET_RECIVED_TO_PLC = True
                     pallet_position = iut_warehouse.find_pallet_position()
-                    mqtt_sub_pub_plc.publish("destination", str(pallet_position))
+                    time.sleep(5)
+                    mqtt_sub_pub_plc.publish("position", f"{int(pallet_position):02d}")
+                    logging.info("Warehouse will be like:")
                     iut_warehouse.update(pallet_position)
                     sql_server.update_warehouse_table((red, green, blue, white), pallet_position)
                     mqtt_sub_pub_plc.reset()

@@ -50,7 +50,7 @@ class Inventory:
 
     @staticmethod
     def make_mobile_order(colors_part : str, material_coordinate_list : list) -> str:
-        colors_part += "#"
+        colors_part = f"{int(colors_part):04d}" + "#"
         position = "#".join(["".join(map(str, i)) for i in material_coordinate_list])
         return colors_part + position
 

@@ -84,6 +84,7 @@ class MQTT:
 
 
 class MQTTSubPubPLC(MQTT):
+    PALLET_RECIVED_LOGGED = False
 
     def __init__(self, address, port):
         self.address = address
@@ -92,6 +93,7 @@ class MQTTSubPubPLC(MQTT):
         # self.client.pallet_position = None
         self.client.pallet_recived = False
         self.client.on_message = MQTTSubPubPLC.on_message
+        # self.pallet_recived_logged = False
 
     def subscribe(self, topic):
         return self.client.subscribe(topic)
@@ -129,7 +131,9 @@ class MQTTSubPubPLC(MQTT):
         topic = msg.topic
         m_decode = str(msg.payload.decode('utf-8'))
         # client.pallet_position = m_decode
-        if m_decode == "yes":
+        # if m_decode == "Pallet Received":
+        if MQTTSubPubPLC.PALLET_RECIVED_LOGGED == False:
+            MQTTSubPubPLC.PALLET_RECIVED_LOGGED = True
             client.pallet_recived = True
             logging.info("Pallet recived to PLC.")
 
